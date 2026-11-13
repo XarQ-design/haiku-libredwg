@@ -1,0 +1,108 @@
+SUMMARY="GNU library to read and write AutoCAD DWG files"
+DESCRIPTION="GNU LibreDWG is a free C library to read and write DWG files, \
+the native file format of AutoCAD and many other CAD programs. It covers DWG \
+from R1.2 to 2018 and can convert them to and from DXF, JSON, GeoJSON and SVG.
+
+The tools package has dwgread, dwg2dxf, dxf2dwg, dwg2SVG, dwgadd, dwglayers, dwggrep \
+and the other command line programs."
+HOMEPAGE="https://www.gnu.org/software/libredwg/"
+COPYRIGHT="2009-2025 Free Software Foundation, Inc."
+LICENSE="GNU GPL v3"
+REVISION="1"
+SOURCE_URI="https://ftp.gnu.org/gnu/libredwg/libredwg-$portVersion.tar.xz"
+CHECKSUM_SHA256="62ebb73b984f865960f20ed26619ea5f8789d5e3fd088fa40a2598384da81275"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+commandSuffix=$secondaryArchSuffix
+commandBinDir=$binDir
+if [ "$targetArchitecture" = x86_gcc2 ]; then
+	commandSuffix=
+	commandBinDir=$prefix/bin
+fi
+
+libVersion="0.0.14"
+libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
+
+PROVIDES="
+	libredwg$secondaryArchSuffix = $portVersion
+	lib:libredwg$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	"
+
+PROVIDES_devel="
+	libredwg${secondaryArchSuffix}_devel = $portVersion
+	devel:libredwg$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES_devel="
+	libredwg$secondaryArchSuffix == $portVersion base
+	"
+
+SUMMARY_tools="Command line tools to read, convert and write DWG files"
+PROVIDES_tools="
+	libredwg${secondaryArchSuffix}_tools = $portVersion
+	cmd:dwg2SVG$commandSuffix = $portVersion
+	cmd:dwg2dxf$commandSuffix = $portVersion
+	cmd:dwgadd$commandSuffix = $portVersion
+	cmd:dwgbmp$commandSuffix = $portVersion
+	cmd:dwgfilter$commandSuffix = $portVersion
+	cmd:dwggrep$commandSuffix = $portVersion
+	cmd:dwglayers$commandSuffix = $portVersion
+	cmd:dwgread$commandSuffix = $portVersion
+	cmd:dwgrewrite$commandSuffix = $portVersion
+	cmd:dwgwrite$commandSuffix = $portVersion
+	cmd:dxf2dwg$commandSuffix = $portVersion
+	cmd:dxfwrite$commandSuffix = $portVersion
+	"
+REQUIRES_tools="
+	haiku$secondaryArchSuffix
+	libredwg$secondaryArchSuffix == $portVersion base
+	lib:libpcre2_8$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:libpcre2_8$secondaryArchSuffix
+	devel:libssp_nonshared$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:awk
+	cmd:cmp
+	cmd:diff
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:pkg_config$secondaryArchSuffix
+	"
+
+BUILD()
+{
+	runConfigure --omit-dirs binDir ./configure \
+		--bindir=$commandBinDir \
+		--disable-static \
+		--disable-bindings \
+		--disable-docs \
+		--disable-python \
+		--disable-werror
+	make $jobArgs
+}
+
+INSTALL()
+{
+	make install
+
+	rm -f $libDir/libredwg.la
+	rm -rf $infoDir
+
+	prepareInstalledDevelLib libredwg
+	fixPkgconfig
+
+	packageEntries devel \
+		$developDir
+
+	packageEntries tools \
+		$commandBinDir \
+		$manDir/man1
+}
